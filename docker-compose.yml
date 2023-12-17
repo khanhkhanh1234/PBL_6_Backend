@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+  app_server:
+    build:
+        context: .
+        dockerfile: ./Dockerfile
+    tty: true
+    container_name: app-api
+    ports:
+      - "4002:8080"
+    volumes:
+      - ./:/var/www
+    networks:
+      - example-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: app-sql
+    restart: 'always'
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sgroup
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    ports:
+      - 3307:3306
+    volumes:
+      - ./docker/mysql/data3:/var/lib/mysql
+    networks:
+      - example-network
+
+
+networks:
+  example-network:
