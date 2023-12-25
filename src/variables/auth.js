@@ -66,12 +66,10 @@ loginRouter.post('/register', async (req, res, next) => {
 });
 
 loginRouter.post('/login', async (req, res) => {
-    console.log("login")
     try {
         const data = req.body;
         const username = data.username;
         const password = data.password;
-        console.log(data);
         const isUserValid = await getOne({
             db,
             query: "SELECT * FROM users WHERE username = ?",
@@ -81,14 +79,16 @@ loginRouter.post('/login', async (req, res) => {
         if (!isUserValid) {
             res.status(400).json({ message: 'Username does not exist' });
         } else {
+            console.log(isUserValid);
             const salt = isUserValid.salt;
             const hashedPw = isUserValid.password;
             const hashedPwFromDB = hashPasswordWithSaltFromDB(password, salt).hashedPw;
             const user_id = isUserValid.id;
-            localStorage.setItem('user_id', user_id);
+
             if (hashedPwFromDB.localeCompare(hashedPw) === 0) {
                 const token = jwt.sign({ username: isUserValid.username }, privateKey, { algorithm: 'RS256' }, options);
-                res.status(200).json({ token,  message: 'Username or password is correct' });
+                res.status(200).json({ token, isUserValid,  message: 'Username or password is correct' });
+                console.log(isUserValid);
             } else {
                 res.json({ message: 'Username or password is incorrect' });
             }
@@ -141,13 +141,13 @@ loginRouter.put('/:id', async (req, res, next) => {
 
 loginRouter.post('/saveLandCertificate',async (req, res, next) => {
     const data = req.body;
-    console.log(data)
-    var { owner, yob, idcard, owneraddress, idcerti, landplot,landaddress,acreage, uses,purpose,
-        dateuse,originuse,house,constructionorther,productionforest,oldtree,note,image
+    var { user_id, owner, yob, idcard, owneraddress, idcerti, landplot,landaddress,acreage, uses,purpose,
+        dateuse,originuse,house,constructionorther,productionforest,oldtree,note,changecontent,image
     } = data;
+    console.log(data)
     
-    const user_id = localStorage.getItem('user_id');
     console.log(user_id)
+    // console.log(user_id)
     try {
       const result = await create({
         db,
