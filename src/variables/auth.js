@@ -31,10 +31,13 @@ const { TLSSocket } = require('tls');
 const publicKey = fs.readFileSync('public_key.pem', 'utf8');
 const privateKey = fs.readFileSync('private_key.pem', 'utf8');
 loginRouter.post('/register', async (req, res, next) => {
-    const { username, password, name, age, gender, email } = data;
+    const data = req.body;
+    console.log(data)
+    
+    var { username, password, name, age, gender, email } = data;
     console.log(data.password);
     try {
-        const isUserExist = await getOne({
+        var isUserExist = await getOne({
             db,
             query: "SELECT * FROM users WHERE username = ?",
             params: [username], // Đảm bảo truyền tham số dưới dạng mảng
@@ -44,14 +47,15 @@ loginRouter.post('/register', async (req, res, next) => {
             res.json({ message: 'Username is already exist' });
         } else {
             // Đảm bảo hàm hashPasswordWithSalt() trả về một đối tượng chứa salt và hashedPw
-            const { salt, hashedPw } = hashPasswordWithSalt(password);
-
-            const result = await create({
+            var { salt, hashedPw } = hashPasswordWithSalt(password);
+        
+            var result = await create({
                 db,
                 query: `INSERT INTO users (username, password, salt, name, age, gender, email)  
                         VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 params: [username, hashedPw, salt, name, age, gender, email]
             });
+            console.log("hihi123");
             
             res.status(200).json({ message: 'Register success' });
         }
@@ -62,6 +66,7 @@ loginRouter.post('/register', async (req, res, next) => {
 });
 
 loginRouter.post('/login', async (req, res) => {
+    console.log("login")
     try {
         const data = req.body;
         const username = data.username;
@@ -83,9 +88,9 @@ loginRouter.post('/login', async (req, res) => {
             localStorage.setItem('user_id', user_id);
             if (hashedPwFromDB.localeCompare(hashedPw) === 0) {
                 const token = jwt.sign({ username: isUserValid.username }, privateKey, { algorithm: 'RS256' }, options);
-                res.status(200).json({ token });
+                res.status(200).json({ token,  message: 'Username or password is correct' });
             } else {
-                res.status(400).json({ message: 'Username or password is incorrect' });
+                res.json({ message: 'Username or password is incorrect' });
             }
         }
     } catch (error) {
@@ -134,9 +139,15 @@ loginRouter.put('/:id', async (req, res, next) => {
 });
 
 
-loginRouter.post('/saveLandCertificate', validateToken,async (req, res, next) => {
+loginRouter.post('/saveLandCertificate',async (req, res, next) => {
     const data = req.body;
+    console.log(data)
+    var { owner, yob, idcard, owneraddress, idcerti, landplot,landaddress,acreage, uses,purpose,
+        dateuse,originuse,house,constructionorther,productionforest,oldtree,note,image
+    } = data;
+    
     const user_id = localStorage.getItem('user_id');
+    console.log(user_id)
     try {
       const result = await create({
         db,
@@ -149,15 +160,16 @@ loginRouter.post('/saveLandCertificate', validateToken,async (req, res, next) =>
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         params: [
-          user_id, data.owner, data.yob, data.idcard,
-          data.owneraddress, data.idcerti, data.landplot,
-          data.landaddress, data.acreage, data.uses,
-          data.purpose, data.dateuse, data.originuse,
-          data.house, data.constructionorther,
-          data.productionforest, data.oldtree,
-          data.note, data.changecontent, data.image
+          user_id, owner, yob, idcard,
+          owneraddress, idcerti, landplot,
+          landaddress, acreage, uses,
+          purpose, dateuse, originuse,
+          house, constructionorther,
+          productionforest, oldtree,
+          note, changecontent, image
         ],
       });
+      console.log(result)
   
       res.status(200).json({ message: 'Land certificate saved successfully' });
     } catch (err) {
