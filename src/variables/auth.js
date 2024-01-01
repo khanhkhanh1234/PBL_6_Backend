@@ -175,6 +175,7 @@ loginRouter.post('/saveLandCertificate',async (req, res, next) => {
     } catch (err) {
       res.status(400).json({ message: err.message });
     }
+    this.route
   });
 
 loginRouter.get('/exportExcelWithUserId', async (req, res) => {
@@ -235,6 +236,7 @@ loginRouter.get('/exportExcelWithUserId', async (req, res) => {
 });
 
 loginRouter.get('/exportAllExcel', async (req, res) => {
+    console.log("xuất execl")
     try {
         // Lấy tất cả dữ liệu từ bảng landCerti
         const allLandCertData = await getMany({
