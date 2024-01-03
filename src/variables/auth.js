@@ -79,7 +79,6 @@ loginRouter.post('/login', async (req, res) => {
         if (!isUserValid) {
             res.status(400).json({ message: 'Username does not exist' });
         } else {
-            console.log(isUserValid);
             const salt = isUserValid.salt;
             const hashedPw = isUserValid.password;
             const hashedPwFromDB = hashPasswordWithSaltFromDB(password, salt).hashedPw;
@@ -88,7 +87,6 @@ loginRouter.post('/login', async (req, res) => {
             if (hashedPwFromDB.localeCompare(hashedPw) === 0) {
                 const token = jwt.sign({ username: isUserValid.username }, privateKey, { algorithm: 'RS256' }, options);
                 res.status(200).json({ token, isUserValid,  message: 'Username or password is correct' });
-                console.log(isUserValid);
             } else {
                 res.json({ message: 'Username or password is incorrect' });
             }
@@ -236,7 +234,6 @@ loginRouter.get('/exportExcelWithUserId', async (req, res) => {
 });
 
 loginRouter.get('/exportAllExcel', async (req, res) => {
-    console.log("xuất execl")
     try {
         // Lấy tất cả dữ liệu từ bảng landCerti
         const allLandCertData = await getMany({
@@ -253,21 +250,43 @@ loginRouter.get('/exportAllExcel', async (req, res) => {
         worksheet.addRow(headers);
 
         // Thêm dữ liệu từ cơ sở dữ liệu vào worksheet
-        allLandCertData.forEach((row) => {
+        allLandCertData.forEach((row, index) => {
             const newRow = { ...row };
 
             // Xử lý trường image
             const imageBase64 = row.image;
             if (imageBase64) {
                 const imageBuffer = Buffer.from(imageBase64, 'base64');
-                const imageFileName = `image_${row.id}.png`; // Đặt tên file ảnh
+
+                // Đặt tên file ảnh
+                const imageFileName = `image_${row.id}.png`;
+
+                // Tạo đường dẫn tạm thời để lưu ảnh
                 const imagePath = path.join(__dirname, imageFileName);
-                console.log(imagePath);
+
                 // Lưu ảnh vào tệp
                 fs.writeFileSync(imagePath, imageBuffer);
 
-                // Thêm đường dẫn ảnh vào trường 'image'
-                newRow.image = imagePath;
+                // Xóa đường dẫn ảnh từ dữ liệu
+                delete newRow.image;
+
+                // Thêm ảnh vào worksheet
+                const imageId = workbook.addImage({
+                    buffer: imageBuffer,
+                    extension: 'png',
+                });
+
+                // Tính toán vị trí cho ảnh
+                const imageCol = headers.indexOf('image') + 1 + 3; // Move to column X
+                const imageRow = 2 + index * 6; // Mỗi set dữ liệu cách nhau 5 hàng và 1 dòng trống
+
+                worksheet.addImage(imageId, {
+                    tl: { col: imageCol, row: imageRow },
+                    br: { col: imageCol + 5, row: imageRow + 5 },
+                    editAs: 'undefined',
+                });
+
+                fs.unlinkSync(imagePath);
             }
 
             worksheet.addRow(Object.values(newRow));
